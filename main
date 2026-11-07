@@ -1,0 +1,58 @@
+function makeAllTablesExact01() {
+  const doc = DocumentApp.getActiveDocument();
+  const body = doc.getBody();
+  const tables = body.getTables();
+  
+  if (tables.length === 0) {
+    Logger.log("No tables found in this document.");
+    return;
+  }
+  
+  tables.forEach(table => {
+    const numRows = table.getNumRows();
+    for (let r = 0; r < numRows; r++) {
+      const row = table.getRow(r);
+      row.setMinimumHeight(0);
+      
+      const numCells = row.getNumCells();
+      for (let c = 0; c < numCells; c++) {
+        const cell = row.getCell(c);
+        
+        // 0.1 inches = 7.2 points (this matches the UI 0.1 in setting)
+        cell.setPaddingTop(7.2);
+        cell.setPaddingBottom(7.2);
+        cell.setPaddingLeft(7.2);
+        cell.setPaddingRight(7.2);
+        
+        // Clean up empty trailing paragraphs
+        let numParagraphs = cell.getNumChildren();
+        for (let p = numParagraphs - 1; p >= 1; p--) {
+          const child = cell.getChild(p);
+          if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+            const paragraph = child.asParagraph();
+            if (paragraph.getText().trim() === "") {
+              paragraph.removeFromParent();
+            }
+          }
+        }
+        
+        // Strip line spacing and space before/after from all remaining paragraphs
+        for (let p = 0; p < cell.getNumChildren(); p++) {
+          const child = cell.getChild(p);
+          if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+            const paragraph = child.asParagraph();
+            paragraph.setSpacingBefore(0);
+            paragraph.setSpacingAfter(0);
+            paragraph.setLineSpacing(1.0);
+            
+            if (paragraph.getText().trim() === "") {
+              paragraph.setFontSize(1);
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  doc.saveAndClose();
+}
